@@ -20,3 +20,22 @@ variable "proxmox_tls_insecure" {
   type        = bool
   default     = true
 }
+
+# VM 설정
+variable "vm_disk_size" {
+  description = "VM 디스크 크기 (GB)"
+  type        = number
+  default     = 50
+}
+
+variable "vm_memory" {
+  description = "VM 메모리 (MB)"
+  type        = number
+  default     = 2048
+}
+
+variable "vm_cores" {
+  description = "VM CPU 코어 수"
+  type        = number
+  default     = 2
+}

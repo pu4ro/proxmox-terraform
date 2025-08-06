@@ -34,17 +34,18 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   node_name = "solutions"
   
   clone {
-    vm_id = 9003
+    vm_id = 9009
     full  = true
   }
   
   cpu {
-    cores = 2
+    cores = var.vm_cores
   }
   
   memory {
-    dedicated = 2048
+    dedicated = var.vm_memory
   }
+  
   
   network_device {
     bridge = "vmbr0"
