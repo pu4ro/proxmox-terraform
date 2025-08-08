@@ -1,11 +1,11 @@
 #!/bin/bash
-# 완전한 Guest Agent 포함 템플릿 생성
+# 새로운 PC 환경에서 동일한 Guest Agent 포함 템플릿 생성
 
-VM_ID=9004
-VM_NAME="ubuntu-22-04-5-guest-agent"
+VM_ID=9005
+VM_NAME="ubuntu-22-04-5-guest-agent-new"
 STORAGE="local-lvm"
 
-echo "=== 완전한 Guest Agent 포함 템플릿 생성 ==="
+echo "=== 새로운 Guest Agent 포함 템플릿 생성 ==="
 
 # 1. VM 생성
 echo "1. VM $VM_ID 생성 중..."
@@ -40,41 +40,52 @@ sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
 sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
 "qm set $VM_ID --machine q35"
 
-# 4. 디스크 크기 조정
+# 4. 디스크 크기 조정 (300GB)
 echo "4. 디스크 크기 조정 중..."
 sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
-"qm resize $VM_ID scsi0 +18G"
+"qm resize $VM_ID scsi0 +298G"
 
-# 5. Cloud-init 기본 설정
-echo "5. Cloud-init 기본 설정 중..."
+# 5. 네트워크 설정 (패키지 설치용 임시 설정)
+echo "5. 네트워크 설정 중..."
 sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
-"qm set $VM_ID --ciuser ubuntu --cipassword cloud1234"
+"qm set $VM_ID --ipconfig0 ip=192.168.135.200/23,gw=192.168.134.1"
 
-# 6. Guest Agent 설치용 cloud-config 생성
+sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
+"qm set $VM_ID --nameserver 8.8.8.8"
+
+# 6. Guest Agent 설치용 cloud-config 생성 (Cloud-init 25.1.4 기준)
 echo "6. Guest Agent 설치 스크립트 생성 중..."
 sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
 'mkdir -p /var/lib/vz/snippets'
 
 sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
-'cat > /var/lib/vz/snippets/install-guest-agent.yml << "EOF"
+'cat > /var/lib/vz/snippets/install-guest-agent-new.yml << "EOF"
 #cloud-config
+# 모든 cloud-init 버전 호환 설정
+
 package_update: true
 package_upgrade: true
 packages:
   - qemu-guest-agent
+
 runcmd:
+  - apt-get update
+  - apt-get install -y qemu-guest-agent
+  - systemctl daemon-reload
   - systemctl enable qemu-guest-agent
   - systemctl start qemu-guest-agent
-  - echo "Guest Agent installed and started" > /tmp/guest-agent-status
-power_state:
-  mode: poweroff
-  timeout: 300
+  - sleep 15
+  - systemctl is-active qemu-guest-agent
+  - echo "Guest Agent installation completed" > /tmp/guest-agent-status
+  - shutdown -h +1
+
+final_message: "Guest Agent installation completed successfully"
 EOF'
 
 # 7. Cloud-init 사용자 데이터 적용
 echo "7. Cloud-init 사용자 데이터 적용 중..."
 sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
-"qm set $VM_ID --cicustom user=local:snippets/install-guest-agent.yml"
+"qm set $VM_ID --cicustom user=local:snippets/install-guest-agent-new.yml"
 
 # 8. VM 시작 및 Guest Agent 설치
 echo "8. VM 시작하여 Guest Agent 설치 중..."
@@ -105,12 +116,22 @@ if [ $timeout -le 0 ]; then
     sleep 10
 fi
 
-# 10. 템플릿으로 변환
-echo "10. 템플릿으로 변환 중..."
+# 10. 네트워크 설정 제거 (템플릿은 깨끗해야 함)
+echo "10. 임시 네트워크 설정 제거 중..."
+sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
+"qm set $VM_ID --delete ipconfig0"
+
+sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
+"qm set $VM_ID --delete nameserver"
+
+# 11. 템플릿으로 변환
+echo "11. 템플릿으로 변환 중..."
 sshpass -p 'cloud1234' ssh -o StrictHostKeyChecking=no root@192.168.135.10 \
 "qm template $VM_ID"
 
 echo ""
-echo "=== Guest Agent 포함 템플릿 생성 완료! ==="
+echo "=== 새로운 Guest Agent 포함 템플릿 생성 완료! ==="
 echo "템플릿 ID: $VM_ID"
 echo "템플릿 이름: $VM_NAME"
+echo ""
+echo "이제 Terraform에서 이 템플릿을 사용할 수 있습니다."
