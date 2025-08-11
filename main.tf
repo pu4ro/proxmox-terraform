@@ -82,7 +82,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     user_account {
       username = "ubuntu"
       password = "cloud1234"
-      keys     = [file("~/.ssh/id_ed25519.pub")]
+      keys     = [var.ssh_public_key]
     }
     
   }

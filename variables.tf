@@ -71,3 +71,8 @@ variable "vm_name_prefix" {
   type        = string
   default     = "ubuntu-vm"
 }
+
+variable "ssh_public_key" {
+  description = "SSH 공개 키 내용"
+  type        = string
+}
