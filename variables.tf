@@ -76,3 +76,9 @@ variable "ssh_public_key" {
   description = "SSH 공개 키 내용"
   type        = string
 }
+
+variable "template_id" {
+  description = "복제할 템플릿 VM ID"
+  type        = number
+  default     = 9005
+}

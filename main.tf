@@ -40,7 +40,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   node_name = "solutions"
   
   clone {
-    vm_id = 9005
+    vm_id = var.template_id
     full  = true
   }
   
