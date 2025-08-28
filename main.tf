@@ -46,6 +46,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   
   cpu {
     cores = var.vm_cores
+    type  = "x86-64-v2-AES"
   }
   
   memory {
