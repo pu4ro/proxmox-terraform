@@ -35,9 +35,10 @@ provider "proxmox" {
 
 # Create VMs from ubuntu-22-04-5-template
 resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
-  count     = var.vm_count
-  name      = "${var.vm_name_prefix}-${count.index + 1}"
-  node_name = "solutions"
+  count            = var.vm_count
+  name             = "${var.vm_name_prefix}-${count.index + 1}"
+  node_name        = "solutions"
+  shutdown_timeout = 0
   
   clone {
     vm_id = var.template_id
