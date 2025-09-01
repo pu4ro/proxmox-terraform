@@ -6,7 +6,7 @@
 #   PROXMOX_PASSWORD (Proxmox root 패스워드)
 
 # 환경변수 설정 (기본값)
-OS_VERSION=${OS_VERSION:-"22.04"}
+OS_VERSION=${OS_VERSION:-"24.04"}
 PROXMOX_HOST=${PROXMOX_HOST:-"192.168.135.10"}
 PROXMOX_PASSWORD=${PROXMOX_PASSWORD:-"cloud1234"}
 
@@ -31,7 +31,7 @@ case "$OS_VERSION" in
         ;;
 esac
 
-STORAGE="local-lvm"
+STORAGE="local-lvm2"
 
 echo "=== Ubuntu $OS_VERSION Guest Agent 포함 템플릿 생성 ==="
 echo "Proxmox Host: $PROXMOX_HOST"

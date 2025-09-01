@@ -51,7 +51,7 @@ variable "disk_type" {
 variable "storage" {
   description = "Storage pool name"
   type        = string
-  default     = "local-lvm"
+  default     = "local-lvm2"
 }
 
 variable "network_model" {
