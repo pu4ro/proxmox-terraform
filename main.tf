@@ -53,6 +53,15 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     dedicated = var.vm_memory
   }
   
+  # 기본 디스크 (클론된 디스크 크기 조정 및 iothread 설정)
+  disk {
+    interface    = "scsi0"
+    datastore_id = "local-lvm"
+    size         = var.vm_disk_size
+    file_format  = "raw"
+    iothread     = true
+  }
+  
   # 추가 디스크 (옵션)
   dynamic "disk" {
     for_each = var.additional_disk_enabled ? [1] : []
@@ -61,6 +70,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
       datastore_id = var.additional_disk_storage
       size         = var.additional_disk_size
       file_format  = "raw"
+      iothread     = true
     }
   }
   
