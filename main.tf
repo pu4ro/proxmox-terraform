@@ -53,6 +53,9 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     dedicated = var.vm_memory
   }
   
+  # SCSI 컨트롤러를 virtio-scsi로 설정
+  scsi_hardware = "virtio-scsi-single"
+  
   # 기본 디스크 (클론된 디스크 크기 조정 및 iothread 설정)
   disk {
     interface    = "scsi0"
