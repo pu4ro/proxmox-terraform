@@ -59,7 +59,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   # 기본 디스크 (클론된 디스크 크기 조정 및 iothread 설정)
   disk {
     interface    = "scsi0"
-    datastore_id = "local-lvm"
+    datastore_id = "local-lvm2"
     size         = var.vm_disk_size
     file_format  = "raw"
     iothread     = true
