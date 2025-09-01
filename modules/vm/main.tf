@@ -7,6 +7,7 @@ resource "proxmox_vm_qemu" "vm" {
   cores   = var.cores
   sockets = var.sockets
   memory  = var.memory
+  machine = "i440fx"
   
   disk {
     size    = var.disk_size
