@@ -15,10 +15,15 @@ pipeline {
     string(name: 'VM_COUNT', defaultValue: '3', description: 'VM 수')
     string(name: 'VM_NAME_PREFIX', defaultValue: 'ubuntu-server', description: 'VM 이름 prefix')
     
-    // PCI Device Passthrough parameters (BDF for device_id)
-    string(name: 'PCI_DEVICE_1', defaultValue: '0000:31:00.0', description: '첫 번째 VM PCI BDF (device_id, 빈 값 시 미사용)')
-    string(name: 'PCI_DEVICE_2', defaultValue: '0000:ca:00.0', description: '두 번째 VM PCI BDF (device_id, 빈 값 시 미사용)')
-    string(name: 'PCI_DEVICE_3', defaultValue: '', description: '세 번째 VM PCI BDF (device_id, 빈 값 시 미사용)')
+    // PCI Passthrough (권장: Proxmox Resource Mappings)
+    string(name: 'PCI_MAPPING_1', defaultValue: '', description: '첫 번째 VM 리소스 매핑 ID (예: gpu0)')
+    string(name: 'PCI_MAPPING_2', defaultValue: '', description: '두 번째 VM 리소스 매핑 ID (예: gpu1)')
+    string(name: 'PCI_MAPPING_3', defaultValue: '', description: '세 번째 VM 리소스 매핑 ID (예: gpu2)')
+
+    // (선택) 레거시 BDF 입력 유지(현재 프로바이더에서는 매핑 권장)
+    string(name: 'PCI_DEVICE_1', defaultValue: '', description: '첫 번째 VM PCI BDF (예: 0000:31:00.0)')
+    string(name: 'PCI_DEVICE_2', defaultValue: '', description: '두 번째 VM PCI BDF (예: 0000:ca:00.0)')
+    string(name: 'PCI_DEVICE_3', defaultValue: '', description: '세 번째 VM PCI BDF')
     booleanParam(name: 'HOSTPCI_PCIE', defaultValue: true, description: 'PCIe 모드 사용')
     booleanParam(name: 'HOSTPCI_ROMBAR', defaultValue: false, description: 'ROM BAR 사용')
   }
@@ -91,6 +96,12 @@ cat > tf/terraform.tfvars.json <<JSON
 
   "ssh_public_key":        "${SSH_PUBKEY}",
   
+  // 우선순위: pci_mappings > (개별 pci_mapping_*) > pci_devices
+  "pci_mappings":          ["${PCI_MAPPING_1:-}", "${PCI_MAPPING_2:-}", "${PCI_MAPPING_3:-}"],
+  "pci_mapping_1":         "${PCI_MAPPING_1:-}",
+  "pci_mapping_2":         "${PCI_MAPPING_2:-}",
+  "pci_mapping_3":         "${PCI_MAPPING_3:-}",
+
   "pci_devices":           ["${PCI_DEVICE_1:-}", "${PCI_DEVICE_2:-}", "${PCI_DEVICE_3:-}"],
   "pci_device_1":          "${PCI_DEVICE_1:-}",
   "pci_device_2":          "${PCI_DEVICE_2:-}",

@@ -90,6 +90,13 @@ variable "pci_devices" {
   default     = []
 }
 
+# Proxmox Resource Mappings (권장)
+variable "pci_mappings" {
+  description = "각 VM 인덱스별 Proxmox 리소스 매핑 ID 목록 (예: [\"gpu0\", \"gpu1\"])"
+  type        = list(string)
+  default     = []
+}
+
 # (백워드 호환) 간단한 count 기반 개별 변수
 # 제공 시 위의 pci_devices가 비어 있을 때만 사용됨
 variable "pci_device_1" {
@@ -106,6 +113,25 @@ variable "pci_device_2" {
 
 variable "pci_device_3" {
   description = "세 번째 VM에 할당할 PCI 디바이스 (예: 0000:65:00.0)"
+  type        = string
+  default     = ""
+}
+
+# (백워드 호환) 간단한 count 기반 매핑 변수
+variable "pci_mapping_1" {
+  description = "첫 번째 VM에 할당할 Proxmox 리소스 매핑 ID (예: gpu0)"
+  type        = string
+  default     = ""
+}
+
+variable "pci_mapping_2" {
+  description = "두 번째 VM에 할당할 Proxmox 리소스 매핑 ID (예: gpu1)"
+  type        = string
+  default     = ""
+}
+
+variable "pci_mapping_3" {
+  description = "세 번째 VM에 할당할 Proxmox 리소스 매핑 ID (예: gpu2)"
   type        = string
   default     = ""
 }

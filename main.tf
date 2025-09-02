@@ -39,6 +39,21 @@ locals {
       i == 2 ? var.pci_device_3 : ""))
     )
   ]
+
+  # 리소스 매핑 리스트(우선순위: pci_mappings -> 개별 변수)
+  pci_mappings_from_list = [
+    for i in range(var.vm_count) : (
+      i < length(var.pci_mappings) ? var.pci_mappings[i] : ""
+    )
+  ]
+
+  pci_mappings_effective = length(var.pci_mappings) > 0 ? local.pci_mappings_from_list : [
+    for i in range(var.vm_count) : (
+      i == 0 ? var.pci_mapping_1 : (
+      i == 1 ? var.pci_mapping_2 : (
+      i == 2 ? var.pci_mapping_3 : ""))
+    )
+  ]
 }
 
 provider "proxmox" {
@@ -96,14 +111,15 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     bridge = "vmbr0"
   }
   
-  # PCI Device 패스스루 설정 (VM 인덱스별 리스트 기반)
+  # PCI Device 패스스루 설정 - Proxmox Resource Mapping 사용 권장
+  # 매핑이 제공된 VM에만 hostpci0을 설정
   dynamic "hostpci" {
-    for_each = local.pci_devices_effective[count.index] != "" ? [local.pci_devices_effective[count.index]] : []
+    for_each = local.pci_mappings_effective[count.index] != "" ? [local.pci_mappings_effective[count.index]] : []
     content {
-      id     = 0
-      device = hostpci.value
-      pcie   = var.hostpci_pcie
-      rombar = var.hostpci_rombar
+      device  = "hostpci0"    # 슬롯 키
+      mapping = hostpci.value  # Proxmox 리소스 매핑 ID
+      pcie    = var.hostpci_pcie
+      rombar  = var.hostpci_rombar
     }
   }
 
