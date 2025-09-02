@@ -1,4 +1,67 @@
-proxmox_api_url      = "https://your-proxmox-server:8006/api2/json"
-proxmox_user         = "root@pam"
-proxmox_password     = "your-password"
+# Proxmox 설정
+proxmox_api_url = "https://your-proxmox:8006/api2/json"
+proxmox_user = "terraform@pve"
+proxmox_password = "your-password"
 proxmox_tls_insecure = true
+
+# SSH 키
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB..."
+
+# VM 기본 설정
+vm_count = 3
+vm_name_prefix = "gpu-vm"
+vm_cores = 8
+vm_memory = 8192
+vm_disk_size = 200
+
+# GPU 할당 설정 - 두 가지 방식 중 하나를 선택하세요
+
+# 방법 1: 특정 VM에만 선택적으로 GPU 할당 (권장)
+global_hostpci_enabled = false  # 글로벌 GPU 비활성화
+vm_hostpci_config = {
+  "gpu-vm-1" = {  # 첫 번째 VM에만 RTX 4090 할당
+    enabled = true
+    devices = [
+      {
+        device = "0000:01:00.0"  # RTX 4090 그래픽카드
+        pcie   = true
+        rombar = false           # GPU는 보통 false
+        xvga   = false
+      },
+      {
+        device = "0000:01:00.1"  # RTX 4090 오디오
+        pcie   = true
+        rombar = false
+        xvga   = false
+      }
+    ]
+  }
+  "gpu-vm-3" = {  # 세 번째 VM에만 RTX 3080 할당  
+    enabled = true
+    devices = [
+      {
+        device = "0000:02:00.0"  # RTX 3080
+        pcie   = true
+        rombar = false
+        xvga   = false
+      }
+    ]
+  }
+  # gpu-vm-2는 GPU 없음 (설정하지 않음)
+}
+
+# 방법 2: 모든 VM에 동일한 GPU 적용 (사용하지 않을 경우 주석 처리)
+# global_hostpci_enabled = true
+# global_hostpci_devices = [
+#   {
+#     device = "0000:01:00.0"  # GPU
+#     pcie   = true
+#     rombar = false
+#     xvga   = false
+#   }
+# ]
+
+# 추가 디스크 설정 (옵션)
+additional_disk_enabled = false
+additional_disk_size = 500
+additional_disk_storage = "local-lvm"

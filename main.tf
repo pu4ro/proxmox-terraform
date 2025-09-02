@@ -24,6 +24,18 @@ locals {
     for i in range(var.vm_count) : 
     i => data.external.available_ip[i].result.ip != null ? data.external.available_ip[i].result.ip : "192.168.135.${30 + i}"
   }
+  
+  # 각 VM에 대한 GPU 패스스루 디바이스 목록 계산
+  vm_hostpci_devices = {
+    for i in range(var.vm_count) : 
+    i => concat(
+      # 글로벌 GPU 디바이스 (모든 VM에 적용)
+      var.global_hostpci_enabled ? var.global_hostpci_devices : [],
+      # VM별 GPU 디바이스
+      lookup(var.vm_hostpci_config, "${var.vm_name_prefix}-${i + 1}", { enabled = false, devices = [] }).enabled ? 
+      lookup(var.vm_hostpci_config, "${var.vm_name_prefix}-${i + 1}", { enabled = false, devices = [] }).devices : []
+    )
+  }
 }
 
 provider "proxmox" {
@@ -81,6 +93,17 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     bridge = "vmbr0"
   }
   
+  # GPU 패스스루 설정 (VM별 또는 글로벌)
+  dynamic "hostpci" {
+    for_each = local.vm_hostpci_devices[count.index]
+    content {
+      device = hostpci.value.device
+      rombar = hostpci.value.rombar
+      pcie   = hostpci.value.pcie
+      xvga   = hostpci.value.xvga
+    }
+  }
+
   initialization {
     ip_config {
       ipv4 {
