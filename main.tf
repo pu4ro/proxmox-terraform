@@ -24,18 +24,6 @@ locals {
     for i in range(var.vm_count) : 
     i => data.external.available_ip[i].result.ip != null ? data.external.available_ip[i].result.ip : "192.168.135.${30 + i}"
   }
-  
-  # 각 VM에 대한 GPU 패스스루 디바이스 목록 계산
-  vm_hostpci_devices = {
-    for i in range(var.vm_count) : 
-    i => concat(
-      # 글로벌 GPU 디바이스 (모든 VM에 적용)
-      var.global_hostpci_enabled ? var.global_hostpci_devices : [],
-      # VM별 GPU 디바이스
-      lookup(var.vm_hostpci_config, "${var.vm_name_prefix}-${i + 1}", { enabled = false, devices = [] }).enabled ? 
-      lookup(var.vm_hostpci_config, "${var.vm_name_prefix}-${i + 1}", { enabled = false, devices = [] }).devices : []
-    )
-  }
 }
 
 provider "proxmox" {
@@ -93,15 +81,13 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     bridge = "vmbr0"
   }
   
-  # PCI Device 패스스루 설정 (VM별 또는 글로벌)  
+  # PCI Device 패스스루 설정 (count.index 기반, 조건부)
   dynamic "hostpci" {
-    for_each = { for idx, device in local.vm_hostpci_devices[count.index] : idx => device }
+    for_each = (count.index == 0 && var.pci_device_1 != "") || (count.index == 1 && var.pci_device_2 != "") || (count.index == 2 && var.pci_device_3 != "") ? [1] : []
     content {
-      id     = hostpci.key
-      device = hostpci.value.device
-      pcie   = hostpci.value.pcie
-      rombar = hostpci.value.rombar
-      xvga   = lookup(hostpci.value, "xvga", false)
+      device = count.index == 0 ? var.pci_device_1 : count.index == 1 ? var.pci_device_2 : count.index == 2 ? var.pci_device_3 : ""
+      pcie   = var.hostpci_pcie
+      rombar = var.hostpci_rombar
     }
   }
 

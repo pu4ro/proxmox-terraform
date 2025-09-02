@@ -83,35 +83,33 @@ variable "template_id" {
   default     = 9005
 }
 
-# GPU 패스스루 설정 (VM별 선택적 적용)
-variable "vm_hostpci_config" {
-  description = "VM별 GPU 패스스루 설정"
-  type = map(object({
-    enabled = bool
-    devices = list(object({
-      device = string  # GPU 디바이스 (예: "0000:01:00.0")
-      rombar = optional(bool, false)  # GPU는 일반적으로 rombar를 비활성화
-      pcie   = optional(bool, true)   # GPU는 일반적으로 PCIe 모드 사용
-      xvga   = optional(bool, false)  # VGA 패스스루가 필요한 경우만 true
-    }))
-  }))
-  default = {}
+# PCI Device 패스스루 설정 (간단한 count 기반)
+variable "pci_device_1" {
+  description = "첫 번째 VM에 할당할 PCI 디바이스 (예: 0000:31:00.0)"
+  type        = string
+  default     = ""
 }
 
-# 글로벌 GPU 패스스루 설정 (모든 VM에 적용)
-variable "global_hostpci_enabled" {
-  description = "모든 VM에 GPU 패스스루 활성화 여부"
+variable "pci_device_2" {
+  description = "두 번째 VM에 할당할 PCI 디바이스 (예: 0000:ca:00.0)"
+  type        = string
+  default     = ""
+}
+
+variable "pci_device_3" {
+  description = "세 번째 VM에 할당할 PCI 디바이스 (예: 0000:65:00.0)"
+  type        = string
+  default     = ""
+}
+
+variable "hostpci_pcie" {
+  description = "PCI 디바이스의 PCIe 모드 사용 여부"
+  type        = bool
+  default     = true
+}
+
+variable "hostpci_rombar" {
+  description = "PCI 디바이스의 ROM BAR 사용 여부"
   type        = bool
   default     = false
-}
-
-variable "global_hostpci_devices" {
-  description = "모든 VM에 적용할 GPU 디바이스 목록"
-  type = list(object({
-    device = string  # GPU 디바이스 (예: "0000:01:00.0")
-    rombar = optional(bool, false)  # GPU는 일반적으로 rombar를 비활성화
-    pcie   = optional(bool, true)   # GPU는 일반적으로 PCIe 모드 사용
-    xvga   = optional(bool, false)  # VGA 패스스루가 필요한 경우만 true
-  }))
-  default = []
 }

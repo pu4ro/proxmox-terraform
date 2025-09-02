@@ -15,12 +15,12 @@ pipeline {
     string(name: 'VM_COUNT', defaultValue: '3', description: 'VM 수')
     string(name: 'VM_NAME_PREFIX', defaultValue: 'ubuntu-server', description: 'VM 이름 prefix')
     
-    // Global GPU Passthrough parameters
-    booleanParam(name: 'GLOBAL_HOSTPCI_ENABLED', defaultValue: false, description: '모든 VM에 GPU 패스스루 활성화')
-    text(name: 'GLOBAL_HOSTPCI_DEVICES', defaultValue: '', description: 'JSON 형태 글로벌 GPU 디바이스 목록 (예: [{"device":"0000:01:00.0","rombar":false,"pcie":true,"xvga":false}])')
-    
-    // VM-specific GPU Passthrough parameters  
-    text(name: 'VM_HOSTPCI_CONFIG', defaultValue: '', description: 'JSON 형태 VM별 GPU 패스스루 설정 (예: {"ubuntu-server-1":{"enabled":true,"devices":[{"device":"0000:01:00.0","rombar":false,"pcie":true}]}})')
+    // PCI Device Passthrough parameters (Simple)
+    string(name: 'PCI_DEVICE_1', defaultValue: '0000:31:00.0', description: '첫 번째 VM PCI 디바이스 (빈 값 시 패스스루 안함)')
+    string(name: 'PCI_DEVICE_2', defaultValue: '0000:ca:00.0', description: '두 번째 VM PCI 디바이스 (빈 값 시 패스스루 안함)')
+    string(name: 'PCI_DEVICE_3', defaultValue: '', description: '세 번째 VM PCI 디바이스 (빈 값 시 패스스루 안함)')
+    booleanParam(name: 'HOSTPCI_PCIE', defaultValue: true, description: 'PCIe 모드 사용')
+    booleanParam(name: 'HOSTPCI_ROMBAR', defaultValue: false, description: 'ROM BAR 사용')
   }
     
   environment {
@@ -70,28 +70,6 @@ terraform -version; jq --version
           sh '''#!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Parse global hostpci devices if provided
-GLOBAL_HOSTPCI_DEVICES_JSON='[]'
-if [ -n "${GLOBAL_HOSTPCI_DEVICES:-}" ] && [ "${GLOBAL_HOSTPCI_DEVICES:-}" != "" ]; then
-  # Validate JSON format
-  echo "${GLOBAL_HOSTPCI_DEVICES}" | jq . > /dev/null || {
-    echo "Invalid JSON format for GLOBAL_HOSTPCI_DEVICES"
-    exit 1
-  }
-  GLOBAL_HOSTPCI_DEVICES_JSON="${GLOBAL_HOSTPCI_DEVICES}"
-fi
-
-# Parse VM-specific hostpci config if provided
-VM_HOSTPCI_CONFIG_JSON='{}'
-if [ -n "${VM_HOSTPCI_CONFIG:-}" ] && [ "${VM_HOSTPCI_CONFIG:-}" != "" ]; then
-  # Validate JSON format
-  echo "${VM_HOSTPCI_CONFIG}" | jq . > /dev/null || {
-    echo "Invalid JSON format for VM_HOSTPCI_CONFIG"
-    exit 1
-  }
-  VM_HOSTPCI_CONFIG_JSON="${VM_HOSTPCI_CONFIG}"
-fi
-
 cat > tf/terraform.tfvars.json <<JSON
 {
   "proxmox_api_url":       "${PROXMOX_API_URL}",
@@ -113,9 +91,11 @@ cat > tf/terraform.tfvars.json <<JSON
 
   "ssh_public_key":        "${SSH_PUBKEY}",
   
-  "global_hostpci_enabled": ${GLOBAL_HOSTPCI_ENABLED},
-  "global_hostpci_devices": ${GLOBAL_HOSTPCI_DEVICES_JSON},
-  "vm_hostpci_config":     ${VM_HOSTPCI_CONFIG_JSON}
+  "pci_device_1":          "${PCI_DEVICE_1}",
+  "pci_device_2":          "${PCI_DEVICE_2}",
+  "pci_device_3":          "${PCI_DEVICE_3}",
+  "hostpci_pcie":          ${HOSTPCI_PCIE},
+  "hostpci_rombar":        ${HOSTPCI_ROMBAR}
 }
 JSON
 jq . tf/terraform.tfvars.json
