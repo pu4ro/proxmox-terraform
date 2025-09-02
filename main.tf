@@ -100,7 +100,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   dynamic "hostpci" {
     for_each = local.pci_devices_effective[count.index] != "" ? [local.pci_devices_effective[count.index]] : []
     content {
-      device_id = hostpci.value
+      device = hostpci.value
       pcie   = var.hostpci_pcie
       rombar = var.hostpci_rombar
     }
