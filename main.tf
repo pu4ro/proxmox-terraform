@@ -24,6 +24,21 @@ locals {
     for i in range(var.vm_count) : 
     i => data.external.available_ip[i].result.ip != null ? data.external.available_ip[i].result.ip : "192.168.135.${30 + i}"
   }
+
+  # PCI 디바이스 리스트(우선순위: pci_devices -> 개별 변수)
+  pci_devices_from_list = [
+    for i in range(var.vm_count) : (
+      i < length(var.pci_devices) ? var.pci_devices[i] : ""
+    )
+  ]
+
+  pci_devices_effective = length(var.pci_devices) > 0 ? local.pci_devices_from_list : [
+    for i in range(var.vm_count) : (
+      i == 0 ? var.pci_device_1 : (
+      i == 1 ? var.pci_device_2 : (
+      i == 2 ? var.pci_device_3 : ""))
+    )
+  ]
 }
 
 provider "proxmox" {
@@ -81,11 +96,11 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     bridge = "vmbr0"
   }
   
-  # PCI Device 패스스루 설정 (count.index 기반, 조건부)
+  # PCI Device 패스스루 설정 (VM 인덱스별 리스트 기반)
   dynamic "hostpci" {
-    for_each = (count.index == 0 && var.pci_device_1 != "") || (count.index == 1 && var.pci_device_2 != "") || (count.index == 2 && var.pci_device_3 != "") ? [1] : []
+    for_each = local.pci_devices_effective[count.index] != "" ? [local.pci_devices_effective[count.index]] : []
     content {
-      device = count.index == 0 ? var.pci_device_1 : count.index == 1 ? var.pci_device_2 : count.index == 2 ? var.pci_device_3 : ""
+      device = hostpci.value
       pcie   = var.hostpci_pcie
       rombar = var.hostpci_rombar
     }

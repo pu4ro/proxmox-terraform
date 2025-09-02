@@ -91,6 +91,7 @@ cat > tf/terraform.tfvars.json <<JSON
 
   "ssh_public_key":        "${SSH_PUBKEY}",
   
+  "pci_devices":           ["${PCI_DEVICE_1:-}", "${PCI_DEVICE_2:-}", "${PCI_DEVICE_3:-}"],
   "pci_device_1":          "${PCI_DEVICE_1:-}",
   "pci_device_2":          "${PCI_DEVICE_2:-}",
   "pci_device_3":          "${PCI_DEVICE_3:-}",

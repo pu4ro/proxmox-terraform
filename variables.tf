@@ -83,7 +83,15 @@ variable "template_id" {
   default     = 9005
 }
 
-# PCI Device 패스스루 설정 (간단한 count 기반)
+# PCI Device 패스스루 설정
+variable "pci_devices" {
+  description = "각 VM 인덱스별 PCI 디바이스 목록 (예: [\"0000:31:00.0\", \"0000:ca:00.0\"])"
+  type        = list(string)
+  default     = []
+}
+
+# (백워드 호환) 간단한 count 기반 개별 변수
+# 제공 시 위의 pci_devices가 비어 있을 때만 사용됨
 variable "pci_device_1" {
   description = "첫 번째 VM에 할당할 PCI 디바이스 (예: 0000:31:00.0)"
   type        = string
