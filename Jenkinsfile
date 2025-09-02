@@ -91,11 +91,11 @@ cat > tf/terraform.tfvars.json <<JSON
 
   "ssh_public_key":        "${SSH_PUBKEY}",
   
-  "pci_device_1":          "${PCI_DEVICE_1}",
-  "pci_device_2":          "${PCI_DEVICE_2}",
-  "pci_device_3":          "${PCI_DEVICE_3}",
-  "hostpci_pcie":          ${HOSTPCI_PCIE},
-  "hostpci_rombar":        ${HOSTPCI_ROMBAR}
+  "pci_device_1":          "${PCI_DEVICE_1:-}",
+  "pci_device_2":          "${PCI_DEVICE_2:-}",
+  "pci_device_3":          "${PCI_DEVICE_3:-}",
+  "hostpci_pcie":          ${HOSTPCI_PCIE:-true},
+  "hostpci_rombar":        ${HOSTPCI_ROMBAR:-false}
 }
 JSON
 jq . tf/terraform.tfvars.json
