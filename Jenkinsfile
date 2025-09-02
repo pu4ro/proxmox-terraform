@@ -96,7 +96,6 @@ cat > tf/terraform.tfvars.json <<JSON
 
   "ssh_public_key":        "${SSH_PUBKEY}",
   
-  // 우선순위: pci_mappings > (개별 pci_mapping_*) > pci_devices
   "pci_mappings":          ["${PCI_MAPPING_1:-}", "${PCI_MAPPING_2:-}", "${PCI_MAPPING_3:-}"],
   "pci_mapping_1":         "${PCI_MAPPING_1:-}",
   "pci_mapping_2":         "${PCI_MAPPING_2:-}",
