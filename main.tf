@@ -93,15 +93,16 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     bridge = "vmbr0"
   }
   
-  # GPU 패스스루 설정 (VM별 또는 글로벌)  
+  # PCI Raw Device 패스스루 설정 (VM별 또는 글로벌)  
   dynamic "hostpci" {
     for_each = { for idx, device in local.vm_hostpci_devices[count.index] : idx => device }
     content {
       device = hostpci.value.device
-      id     = hostpci.key
+      id     = "hostpci${hostpci.key}"
       rombar = hostpci.value.rombar
       pcie   = hostpci.value.pcie
-      xvga   = hostpci.value.xvga
+      xvga   = lookup(hostpci.value, "xvga", false)
+      raw    = true  # Raw PCI device 매핑 활성화
     }
   }
 
