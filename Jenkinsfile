@@ -15,10 +15,10 @@ pipeline {
     string(name: 'VM_COUNT', defaultValue: '3', description: 'VM 수')
     string(name: 'VM_NAME_PREFIX', defaultValue: 'ubuntu-server', description: 'VM 이름 prefix')
     
-    // PCI Device Passthrough parameters (Simple)
-    string(name: 'PCI_DEVICE_1', defaultValue: '0000:31:00.0', description: '첫 번째 VM PCI 디바이스 (빈 값 시 패스스루 안함)')
-    string(name: 'PCI_DEVICE_2', defaultValue: '0000:ca:00.0', description: '두 번째 VM PCI 디바이스 (빈 값 시 패스스루 안함)')
-    string(name: 'PCI_DEVICE_3', defaultValue: '', description: '세 번째 VM PCI 디바이스 (빈 값 시 패스스루 안함)')
+    // PCI Device Passthrough parameters (BDF for device_id)
+    string(name: 'PCI_DEVICE_1', defaultValue: '0000:31:00.0', description: '첫 번째 VM PCI BDF (device_id, 빈 값 시 미사용)')
+    string(name: 'PCI_DEVICE_2', defaultValue: '0000:ca:00.0', description: '두 번째 VM PCI BDF (device_id, 빈 값 시 미사용)')
+    string(name: 'PCI_DEVICE_3', defaultValue: '', description: '세 번째 VM PCI BDF (device_id, 빈 값 시 미사용)')
     booleanParam(name: 'HOSTPCI_PCIE', defaultValue: true, description: 'PCIe 모드 사용')
     booleanParam(name: 'HOSTPCI_ROMBAR', defaultValue: false, description: 'ROM BAR 사용')
   }
