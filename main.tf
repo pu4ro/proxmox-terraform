@@ -95,8 +95,9 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   
   # PCI Device 패스스루 설정 (VM별 또는 글로벌)  
   dynamic "hostpci" {
-    for_each = local.vm_hostpci_devices[count.index]
+    for_each = { for idx, device in local.vm_hostpci_devices[count.index] : idx => device }
     content {
+      id     = hostpci.key
       device = hostpci.value.device
       pcie   = hostpci.value.pcie
       rombar = hostpci.value.rombar
