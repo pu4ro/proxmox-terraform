@@ -71,6 +71,8 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   
   # 강제 정지/삭제 옵션
   stop_on_destroy = true
+  # 필요 시 사전 정지(Apply 시 VM 종료)
+  started         = var.vm_started
   
   clone {
     vm_id = var.template_id
@@ -145,6 +147,26 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     }
     
   }
+}
+
+# Destroy 직전 강제 Stop 훅 (옵션)
+resource "null_resource" "force_stop_before_destroy" {
+  count = var.force_stop_before_destroy ? var.vm_count : 0
+
+  # destroy 시에도 값이 남도록 triggers 에 캡처해둔다
+  triggers = {
+    vmid = proxmox_virtual_environment_vm.ubuntu_vm[count.index].vm_id
+    node = proxmox_virtual_environment_vm.ubuntu_vm[count.index].node_name
+  }
+
+  # VM 삭제 전에 Proxmox API 로 강제 Stop 호출
+  provisioner "local-exec" {
+    when    = destroy
+    command = "${path.module}/scripts/force-stop.sh ${var.proxmox_api_url} '${var.proxmox_user}' '${var.proxmox_password}' ${self.triggers.node} ${self.triggers.vmid} ${var.proxmox_tls_insecure ? "insecure" : ""}"
+  }
+
+  # 생성 순서를 VM 뒤로 밀어두면 파괴 시에는 먼저 실행된다
+  depends_on = [proxmox_virtual_environment_vm.ubuntu_vm]
 }
 
 # 출력 값들

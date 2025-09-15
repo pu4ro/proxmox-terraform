@@ -40,6 +40,13 @@ variable "vm_cores" {
   default     = 16
 }
 
+# VM 전원 상태(Apply 시 기동/정지 제어)
+variable "vm_started" {
+  description = "Apply 시 VM 전원을 켤지 여부 (사전 정지에는 false 사용)"
+  type        = bool
+  default     = true
+}
+
 # 추가 디스크 설정
 variable "additional_disk_enabled" {
   description = "추가 디스크 활성화 여부"
@@ -144,6 +151,13 @@ variable "hostpci_pcie" {
 
 variable "hostpci_rombar" {
   description = "PCI 디바이스의 ROM BAR 사용 여부"
+  type        = bool
+  default     = false
+}
+
+# Destroy 전에 강제 Stop 수행 여부 (Proxmox API 사용)
+variable "force_stop_before_destroy" {
+  description = "terraform destroy 직전에 Proxmox API 로 각 VM 강제 정지를 시도"
   type        = bool
   default     = false
 }

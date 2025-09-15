@@ -5,19 +5,20 @@ pipeline {
   parameters {
     choice(name: 'ACTION', choices: ['plan','apply','destroy','plan-apply'], description: '동작')
     string(name: 'BRANCH', defaultValue: 'master', description: 'Git branch')
-    string(name: 'TEMPLATE_ID', defaultValue: '9005', description: '템플릿 ID')
-    string(name: 'VM_DISK_SIZE', defaultValue: '300', description: '디스크 GB')
-    string(name: 'VM_MEMORY', defaultValue: '32768', description: '메모리 MB')
+    string(name: 'TEMPLATE_ID', defaultValue: '9007', description: '템플릿 ID')
+    string(name: 'VM_DISK_SIZE', defaultValue: '400', description: '디스크 GB')
+    string(name: 'VM_MEMORY', defaultValue: '65536', description: '메모리 MB')
     string(name: 'VM_CORES', defaultValue: '16', description: 'CPU 코어')
+    booleanParam(name: 'VM_STARTED', defaultValue: true, description: 'Apply 시 VM 전원 켬/끔 제어')
     booleanParam(name: 'ADDITIONAL_DISK_ENABLED', defaultValue: true, description: '추가 디스크 사용')
-    string(name: 'ADDITIONAL_DISK_SIZE', defaultValue: '200', description: '추가 디스크 GB')
-    string(name: 'ADDITIONAL_DISK_STORAGE', defaultValue: 'local-lvm', description: '추가 디스크 스토리지')
+    string(name: 'ADDITIONAL_DISK_SIZE', defaultValue: '500', description: '추가 디스크 GB')
+    string(name: 'ADDITIONAL_DISK_STORAGE', defaultValue: 'local-lvm2', description: '추가 디스크 스토리지')
     string(name: 'VM_COUNT', defaultValue: '3', description: 'VM 수')
     string(name: 'VM_NAME_PREFIX', defaultValue: 'ubuntu-server', description: 'VM 이름 prefix')
     
     // PCI Passthrough (권장: Proxmox Resource Mappings)
-    string(name: 'PCI_MAPPING_1', defaultValue: '', description: '첫 번째 VM 리소스 매핑 ID (예: gpu0)')
-    string(name: 'PCI_MAPPING_2', defaultValue: '', description: '두 번째 VM 리소스 매핑 ID (예: gpu1)')
+    string(name: 'PCI_MAPPING_1', defaultValue: 'gpu01', description: '첫 번째 VM 리소스 매핑 ID (예: gpu0)')
+    string(name: 'PCI_MAPPING_2', defaultValue: 'gpu03', description: '두 번째 VM 리소스 매핑 ID (예: gpu1)')
     string(name: 'PCI_MAPPING_3', defaultValue: '', description: '세 번째 VM 리소스 매핑 ID (예: gpu2)')
 
     // (선택) 레거시 BDF 입력 유지(현재 프로바이더에서는 매핑 권장)
@@ -26,6 +27,11 @@ pipeline {
     string(name: 'PCI_DEVICE_3', defaultValue: '', description: '세 번째 VM PCI BDF')
     booleanParam(name: 'HOSTPCI_PCIE', defaultValue: true, description: 'PCIe 모드 사용')
     booleanParam(name: 'HOSTPCI_ROMBAR', defaultValue: false, description: 'ROM BAR 사용')
+
+    // Destroy 가속 옵션
+    booleanParam(name: 'FORCE_STOP_BEFORE_DESTROY', defaultValue: true, description: 'destroy 직전 Proxmox API로 강제 stop')
+    booleanParam(name: 'DESTROY_PRE_STOP_APPLY', defaultValue: false, description: 'destroy 전에 started=false 적용(사전 전원 끔)')
+    booleanParam(name: 'DISABLE_REFRESH', defaultValue: true, description: 'plan/apply/destroy 시 -refresh=false 사용')
   }
     
   environment {
@@ -85,6 +91,7 @@ cat > tf/terraform.tfvars.json <<JSON
   "vm_disk_size":          ${VM_DISK_SIZE},
   "vm_memory":             ${VM_MEMORY},
   "vm_cores":              ${VM_CORES},
+  "vm_started":            ${VM_STARTED},
 
   "additional_disk_enabled": ${ADDITIONAL_DISK_ENABLED},
   "additional_disk_size":  ${ADDITIONAL_DISK_SIZE},
@@ -106,7 +113,9 @@ cat > tf/terraform.tfvars.json <<JSON
   "pci_device_2":          "${PCI_DEVICE_2:-}",
   "pci_device_3":          "${PCI_DEVICE_3:-}",
   "hostpci_pcie":          ${HOSTPCI_PCIE:-true},
-  "hostpci_rombar":        ${HOSTPCI_ROMBAR:-false}
+  "hostpci_rombar":        ${HOSTPCI_ROMBAR:-false},
+
+  "force_stop_before_destroy": ${FORCE_STOP_BEFORE_DESTROY}
 }
 JSON
 jq . tf/terraform.tfvars.json
@@ -120,6 +129,7 @@ jq . tf/terraform.tfvars.json
         dir('tf') {
           sh '''#!/usr/bin/env bash
 set -Eeuo pipefail
+chmod +x scripts/*.sh 2>/dev/null || true
 terraform init -input=false
 terraform fmt -recursive -check || true
 terraform validate
@@ -154,12 +164,19 @@ terraform show -no-color tfplan > ../plan.txt
         dir('tf') {
           sh '''#!/usr/bin/env bash
 set -Eeuo pipefail
+REFRESH_FLAG=""
+if [ "${DISABLE_REFRESH}" = "true" ]; then REFRESH_FLAG="-refresh=false"; fi
+
 if [ "${ACTION}" = "destroy" ]; then
-  terraform destroy -auto-approve
+  if [ "${DESTROY_PRE_STOP_APPLY}" = "true" ]; then
+    echo "[info] Pre-stop apply: vm_started=false"
+    terraform apply -auto-approve ${REFRESH_FLAG} -var vm_started=false || true
+  fi
+  terraform destroy -auto-approve ${REFRESH_FLAG}
 elif [ "${ACTION}" = "plan-apply" ]; then
-  terraform apply -auto-approve tfplan
+  terraform apply -auto-approve ${REFRESH_FLAG} tfplan
 else
-  terraform apply -auto-approve
+  terraform apply -auto-approve ${REFRESH_FLAG}
 fi
 '''
         }
