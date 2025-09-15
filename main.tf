@@ -71,12 +71,6 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   
   # 강제 정지/삭제 옵션
   stop_on_destroy = true
-  timeout_create  = 300
-  timeout_clone   = 300
-  timeout_migrate = 300
-  timeout_reboot  = 60
-  timeout_shutdown = 30
-  timeout_stop_vm = 30
   
   clone {
     vm_id = var.template_id
