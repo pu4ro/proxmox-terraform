@@ -32,6 +32,8 @@ pipeline {
     booleanParam(name: 'FORCE_STOP_BEFORE_DESTROY', defaultValue: true, description: 'destroy 직전 Proxmox API로 강제 stop')
     booleanParam(name: 'DESTROY_PRE_STOP_APPLY', defaultValue: false, description: 'destroy 전에 started=false 적용(사전 전원 끔)')
     booleanParam(name: 'DISABLE_REFRESH', defaultValue: true, description: 'plan/apply/destroy 시 -refresh=false 사용')
+    booleanParam(name: 'STOP_ON_DESTROY_ENABLED', defaultValue: true, description: 'provider의 stop_on_destroy 사용')
+    string(name: 'PARALLELISM', defaultValue: '1', description: 'terraform parallelism (destroy 시 권장 1)')
   }
     
   environment {
@@ -170,9 +172,9 @@ if [ "${DISABLE_REFRESH}" = "true" ]; then REFRESH_FLAG="-refresh=false"; fi
 if [ "${ACTION}" = "destroy" ]; then
   if [ "${DESTROY_PRE_STOP_APPLY}" = "true" ]; then
     echo "[info] Pre-stop apply: vm_started=false"
-    terraform apply -auto-approve ${REFRESH_FLAG} -var vm_started=false || true
+    terraform apply -auto-approve ${REFRESH_FLAG} -var vm_started=false -var stop_on_destroy_enabled=false || true
   fi
-  terraform destroy -auto-approve ${REFRESH_FLAG}
+  terraform destroy -auto-approve ${REFRESH_FLAG} -var stop_on_destroy_enabled=${STOP_ON_DESTROY_ENABLED} -parallelism=${PARALLELISM}
 elif [ "${ACTION}" = "plan-apply" ]; then
   terraform apply -auto-approve ${REFRESH_FLAG} tfplan
 else

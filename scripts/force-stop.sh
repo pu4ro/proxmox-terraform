@@ -31,6 +31,7 @@ extract_json_field() {
 }
 
 STOP_ENDPOINT="${API_URL}/nodes/${NODE}/qemu/${VMID}/status/stop"
+UNLOCK_ENDPOINT="${API_URL}/nodes/${NODE}/qemu/${VMID}/unlock"
 
 echo "[force-stop] Requesting ticket for VMID ${VMID} on node ${NODE}..." >&2
 LOGIN_JSON=$(login)
@@ -45,19 +46,35 @@ if [[ -z "${TICKET}" || -z "${CSRF}" ]]; then
   exit 1
 fi
 
-echo "[force-stop] Sending force stop to ${NODE}/${VMID}..." >&2
-HTTP_CODE=$(curl "${CURL_OPTS[@]}" \
-  -o /dev/null -w "%{http_code}" \
-  -X POST \
-  -H "CSRFPreventionToken: ${CSRF}" \
-  --cookie "PVEAuthCookie=${TICKET}" \
-  "${STOP_ENDPOINT}")
+attempt=1
+max_attempts=5
+while :; do
+  echo "[force-stop] Attempt ${attempt}/${max_attempts}: unlock ${NODE}/${VMID}" >&2
+  UCODE=$(curl "${CURL_OPTS[@]}" -o /dev/null -w "%{http_code}" -X POST \
+    -H "CSRFPreventionToken: ${CSRF}" --cookie "PVEAuthCookie=${TICKET}" \
+    "${UNLOCK_ENDPOINT}" || true)
+  echo "[force-stop] unlock HTTP ${UCODE}" >&2
 
-if [[ "${HTTP_CODE}" != "200" && "${HTTP_CODE}" != "204" ]]; then
-  echo "[force-stop] WARN: stop request returned HTTP ${HTTP_CODE}" >&2
-else
-  echo "[force-stop] Stop request accepted (HTTP ${HTTP_CODE})." >&2
-fi
+  echo "[force-stop] Attempt ${attempt}/${max_attempts}: stop ${NODE}/${VMID}" >&2
+  HTTP_CODE=$(curl "${CURL_OPTS[@]}" \
+    -o /dev/null -w "%{http_code}" \
+    -X POST \
+    -H "CSRFPreventionToken: ${CSRF}" \
+    --cookie "PVEAuthCookie=${TICKET}" \
+    "${STOP_ENDPOINT}")
+
+  if [[ "${HTTP_CODE}" == "200" || "${HTTP_CODE}" == "202" || "${HTTP_CODE}" == "204" ]]; then
+    echo "[force-stop] Stop accepted (HTTP ${HTTP_CODE})." >&2
+    break
+  fi
+
+  if (( attempt >= max_attempts )); then
+    echo "[force-stop] ERROR: stop request failed after ${max_attempts} attempts (last HTTP ${HTTP_CODE})." >&2
+    exit 1
+  fi
+
+  sleep 3
+  attempt=$((attempt+1))
+done
 
 exit 0
-

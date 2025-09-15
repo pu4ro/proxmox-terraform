@@ -161,3 +161,9 @@ variable "force_stop_before_destroy" {
   type        = bool
   default     = false
 }
+# Destroy 시 프로바이더가 자체적으로 stop/shutdown 대기할지 여부
+variable "stop_on_destroy_enabled" {
+  description = "VM 삭제 시 프로바이더의 stop_on_destroy 동작 사용 여부"
+  type        = bool
+  default     = true
+}

@@ -70,7 +70,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   node_name = "solutions"
   
   # 강제 정지/삭제 옵션
-  stop_on_destroy = true
+  stop_on_destroy = var.stop_on_destroy_enabled
   # 필요 시 사전 정지(Apply 시 VM 종료)
   started         = var.vm_started
   
