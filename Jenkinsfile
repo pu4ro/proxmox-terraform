@@ -172,7 +172,7 @@ if [ "${DISABLE_REFRESH}" = "true" ]; then REFRESH_FLAG="-refresh=false"; fi
 if [ "${ACTION}" = "destroy" ]; then
   echo "[info] Pre-scan state to stop existing VMs (node/vmid)"
   # 현재 상태파일에서 존재하는 VM만 추출해 unlock+stop을 먼저 호출 (idempotent)
-  terraform state list | awk '/proxmox_virtual_environment_vm\\.ubuntu_vm\[/ {print $0}' | while read -r ADDR; do
+  terraform state list | grep -F 'proxmox_virtual_environment_vm.ubuntu_vm[' | while read -r ADDR; do
     NODE=$(terraform state show -no-color "$ADDR" | awk -F' = ' '/node_name\s*=/{gsub(/"/,"",$2); print $2; exit}')
     VMID=$(terraform state show -no-color "$ADDR" | awk -F' = ' '/vm_id\s*=/{gsub(/"/,"",$2); print $2; exit}')
     if [ -n "${NODE:-}" ] && [ -n "${VMID:-}" ]; then
@@ -212,4 +212,3 @@ terraform output -json > ../tfout.json || true
 
   post { always { cleanWs(deleteDirs: true, notFailBuild: true) } }
 }
-
