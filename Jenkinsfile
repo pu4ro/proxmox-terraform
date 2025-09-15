@@ -170,6 +170,15 @@ REFRESH_FLAG=""
 if [ "${DISABLE_REFRESH}" = "true" ]; then REFRESH_FLAG="-refresh=false"; fi
 
 if [ "${ACTION}" = "destroy" ]; then
+  echo "[info] Pre-scan state to stop existing VMs (node/vmid)"
+  # 현재 상태파일에서 존재하는 VM만 추출해 unlock+stop을 먼저 호출 (idempotent)
+  if command -v jq >/dev/null 2>&1; then
+    terraform state pull | jq -r '.resources[]? | select(.type=="proxmox_virtual_environment_vm" and .name=="ubuntu_vm") | .instances[]?.attributes | "\(.node_name) \(.vm_id)"' \
+      | while read -r NODE VMID; do
+          echo "[info] pre-stop ${NODE}/${VMID}"; \
+          ../scripts/force-stop.sh "$(jq -r .proxmox_api_url tf/terraform.tfvars.json)" "$(jq -r .proxmox_user tf/terraform.tfvars.json)" "$(jq -r .proxmox_password tf/terraform.tfvars.json)" "$NODE" "$VMID" insecure || true; \
+        done
+  fi
   if [ "${DESTROY_PRE_STOP_APPLY}" = "true" ]; then
     echo "[info] Pre-stop apply: vm_started=false"
     terraform apply -auto-approve ${REFRESH_FLAG} -var vm_started=false -var stop_on_destroy_enabled=false || true

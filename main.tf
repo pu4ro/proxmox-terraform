@@ -151,12 +151,13 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
 
 # Destroy 직전 강제 Stop 훅 (옵션)
 resource "null_resource" "force_stop_before_destroy" {
-  count = var.force_stop_before_destroy ? var.vm_count : 0
+  # 실제로 존재하는 VM 인스턴스에만 훅 생성
+  for_each = var.force_stop_before_destroy ? { for k, v in proxmox_virtual_environment_vm.ubuntu_vm : tostring(k) => v } : {}
 
   # destroy 시에도 값이 남도록 triggers 에 캡처해둔다
   triggers = {
-    vmid = proxmox_virtual_environment_vm.ubuntu_vm[count.index].vm_id
-    node = proxmox_virtual_environment_vm.ubuntu_vm[count.index].node_name
+    vmid = each.value.vm_id
+    node = each.value.node_name
     api  = var.proxmox_api_url
     user = var.proxmox_user
     pass = var.proxmox_password
