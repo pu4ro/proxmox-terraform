@@ -157,12 +157,17 @@ resource "null_resource" "force_stop_before_destroy" {
   triggers = {
     vmid = proxmox_virtual_environment_vm.ubuntu_vm[count.index].vm_id
     node = proxmox_virtual_environment_vm.ubuntu_vm[count.index].node_name
+    api  = var.proxmox_api_url
+    user = var.proxmox_user
+    pass = var.proxmox_password
+    insecure = var.proxmox_tls_insecure ? "insecure" : ""
+    script = "${path.module}/scripts/force-stop.sh"
   }
 
   # VM 삭제 전에 Proxmox API 로 강제 Stop 호출
   provisioner "local-exec" {
     when    = destroy
-    command = "${path.module}/scripts/force-stop.sh ${var.proxmox_api_url} '${var.proxmox_user}' '${var.proxmox_password}' ${self.triggers.node} ${self.triggers.vmid} ${var.proxmox_tls_insecure ? "insecure" : ""}"
+    command = "${self.triggers.script} ${self.triggers.api} '${self.triggers.user}' '${self.triggers.pass}' ${self.triggers.node} ${self.triggers.vmid} ${self.triggers.insecure}"
   }
 
   # 생성 순서를 VM 뒤로 밀어두면 파괴 시에는 먼저 실행된다
